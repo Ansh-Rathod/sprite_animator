@@ -13,7 +13,6 @@ class PreviewData {
     required this.fps,
     required this.loop,
     required this.reverse,
-    required this.autoPlay,
   });
 
   final String animationId;
@@ -21,7 +20,6 @@ class PreviewData {
   final int fps;
   final bool loop;
   final bool reverse;
-  final bool autoPlay;
 
   @override
   bool operator ==(Object other) {
@@ -30,7 +28,6 @@ class PreviewData {
         other.fps == fps &&
         other.loop == loop &&
         other.reverse == reverse &&
-        other.autoPlay == autoPlay &&
         _listEquals(other.framePaths, framePaths);
   }
 
@@ -40,7 +37,6 @@ class PreviewData {
     fps,
     loop,
     reverse,
-    autoPlay,
     Object.hashAll(framePaths),
   );
 
@@ -54,30 +50,27 @@ class PreviewData {
 }
 
 class PreviewWidget extends StatelessWidget {
-  const PreviewWidget({super.key, required this.controller});
-
-  final SpriteAnimationController controller;
+  const PreviewWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ProjectProvider, PreviewData>(
-      selector: (_, provider) => PreviewData(
-        animationId: provider.currentAnimation.id,
-        framePaths: provider.currentAnimation.frames
-            .map((frame) => frame.imagePath)
-            .toList(),
-        fps: provider.currentAnimation.fps,
-        loop: provider.currentAnimation.loop,
-        reverse: provider.currentAnimation.reverse,
-        autoPlay: provider.currentAnimation.autoPlay,
-      ),
+    return Selector<ProjectProvider, ProjectProvider>(
+      selector: (_, provider) => provider,
       shouldRebuild: (previous, next) =>
           shouldRebuildVideo(W.editorPreview, context),
-      builder: (context, data, _) {
+      builder: (context, provider, _) {
         return _FramePreview(
-          key: ValueKey(data.animationId),
-          data: data,
-          controller: controller,
+          key: ValueKey(provider.currentAnimation.id),
+          data: PreviewData(
+            animationId: provider.currentAnimation.id,
+            framePaths: provider.currentAnimation.frames
+                .map((frame) => frame.imagePath)
+                .toList(),
+            fps: provider.currentAnimation.fps,
+            loop: provider.currentAnimation.loop,
+            reverse: provider.currentAnimation.reverse,
+          ),
+          controller: provider.currentSpriteController,
         );
       },
     );
@@ -98,19 +91,32 @@ class _FramePreview extends StatefulWidget {
   State<_FramePreview> createState() => _FramePreviewState();
 }
 
-class _FramePreviewState extends State<_FramePreview> {
+class _FramePreviewState extends State<_FramePreview>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    widget.controller.attach(this);
     _syncController();
     _precacheFrames();
   }
 
   @override
+  void dispose() {
+    if (widget.controller.isPlaying) {
+      widget.controller.pause();
+    }
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant _FramePreview oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      widget.controller.attach(this);
+    }
     if (oldWidget.data != widget.data) {
       _syncController();
       if (!_listEquals(oldWidget.data.framePaths, widget.data.framePaths)) {
@@ -135,12 +141,6 @@ class _FramePreviewState extends State<_FramePreview> {
     }
 
     controller.setupGrid(totalFrames: frameCount);
-
-    if (data.autoPlay && frameCount > 1) {
-      controller.play();
-    } else if (controller.isPlaying) {
-      controller.pause();
-    }
   }
 
   Future<void> _precacheFrames() async {

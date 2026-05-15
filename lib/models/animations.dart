@@ -6,7 +6,6 @@ class Animations {
   List<Frame> frames;
   int fps;
   bool loop;
-  bool autoPlay;
   bool reverse;
 
   Animations({
@@ -15,7 +14,6 @@ class Animations {
     required this.frames,
     required this.fps,
     required this.loop,
-    required this.autoPlay,
     required this.reverse,
   });
 
@@ -26,7 +24,6 @@ class Animations {
       frames: json['frames'].map((frame) => Frame.fromJson(frame)).toList(),
       fps: json['fps'],
       loop: json['loop'],
-      autoPlay: json['autoPlay'],
       reverse: json['reverse'],
     );
   }
@@ -38,7 +35,6 @@ class Animations {
       'frames': frames.map((frame) => frame.toJson()).toList(),
       'fps': fps,
       'loop': loop,
-      'autoPlay': autoPlay,
       'reverse': reverse,
     };
   }
