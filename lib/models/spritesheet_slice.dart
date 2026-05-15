@@ -46,21 +46,6 @@ class SpritesheetSlice {
     return (col: col, row: row);
   }
 
-  void applyAutoSlice(Size imageSize) {
-    if (columns < 1) columns = 1;
-    if (rows < 1) rows = 1;
-
-    final availableW =
-        imageSize.width - offset.dx - (columns - 1) * separation.width;
-    final availableH =
-        imageSize.height - offset.dy - (rows - 1) * separation.height;
-
-    cellSize = Size(
-      (availableW / columns).clamp(1, imageSize.width),
-      (availableH / rows).clamp(1, imageSize.height),
-    );
-  }
-
   SpritesheetSlice copyWith({
     int? columns,
     int? rows,

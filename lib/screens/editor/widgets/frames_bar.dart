@@ -103,6 +103,7 @@ class FramesBar extends StatelessWidget {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
+                                            4.h,
                                             SizedBox(
                                               width: 100,
                                               height: 100,
@@ -119,9 +120,10 @@ class FramesBar extends StatelessWidget {
                                                           color: isSelected
                                                               ? theme
                                                                     .accentColor
-                                                              : Colors
-                                                                    .transparent,
-                                                          width: 2,
+                                                              : theme.cardColor,
+                                                          width: !isSelected
+                                                              ? 1
+                                                              : 2,
                                                         ),
                                                         borderRadius:
                                                             BorderRadius.circular(

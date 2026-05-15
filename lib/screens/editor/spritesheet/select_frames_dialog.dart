@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:fluent_ui/fluent_ui.dart';
@@ -13,23 +12,29 @@ Future<void> showSelectFramesDialog(
   BuildContext context, {
   required String spritesheetPath,
 }) {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => SelectFramesDialog(spritesheetPath: spritesheetPath),
+  return Navigator.of(context).push<void>(
+    PageRouteBuilder<void>(
+      fullscreenDialog: true,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return SelectFramesPage(spritesheetPath: spritesheetPath);
+      },
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    ),
   );
 }
 
-class SelectFramesDialog extends StatefulWidget {
+class SelectFramesPage extends StatefulWidget {
   final String spritesheetPath;
 
-  const SelectFramesDialog({super.key, required this.spritesheetPath});
+  const SelectFramesPage({super.key, required this.spritesheetPath});
 
   @override
-  State<SelectFramesDialog> createState() => _SelectFramesDialogState();
+  State<SelectFramesPage> createState() => _SelectFramesPageState();
 }
 
-class _SelectFramesDialogState extends State<SelectFramesDialog> {
+class _SelectFramesPageState extends State<SelectFramesPage> {
   final GlobalKey<SpritesheetPreviewState> _previewKey =
       GlobalKey<SpritesheetPreviewState>();
 
@@ -62,7 +67,10 @@ class _SelectFramesDialogState extends State<SelectFramesDialog> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _previewKey.currentState?.fitToView(const Size(600, 400));
+        final box = _previewKey.currentContext?.findRenderObject();
+        if (box is RenderBox && box.hasSize) {
+          _previewKey.currentState?.fitToView(box.size);
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -101,13 +109,6 @@ class _SelectFramesDialogState extends State<SelectFramesDialog> {
     setState(() => _selection.clear());
   }
 
-  void _autoSlice() {
-    if (_imageSize == null) return;
-    setState(() {
-      _slice.applyAutoSlice(_imageSize!);
-    });
-  }
-
   Future<void> _confirm() async {
     if (_selection.isEmpty || _isProcessing) return;
 
@@ -142,107 +143,105 @@ class _SelectFramesDialogState extends State<SelectFramesDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
-    final screenSize = MediaQuery.sizeOf(context);
 
-    final maxWidth = screenSize.width * 0.92;
-    final maxHeight = screenSize.height * 0.88;
-    final minWidth = math.min(900.0, maxWidth);
-    final minHeight = math.min(650.0, maxHeight);
-    final contentWidth = math.min(screenSize.width * 0.85, maxWidth);
-    final contentHeight = math.max(
-      240.0,
-      math.min(screenSize.height * 0.7, maxHeight - 100),
-    );
-
-    return ContentDialog(
-      constraints: BoxConstraints(
-        minWidth: minWidth,
-        maxWidth: maxWidth,
-        minHeight: minHeight,
-        maxHeight: maxHeight,
-      ),
-      title: const Text('Select Frames'),
-      content: SizedBox(
-        width: contentWidth,
-        height: contentHeight,
-        child: _isLoading
-            ? const Center(child: ProgressRing())
-            : _error != null
-            ? Center(child: Text(_error!))
-            : Column(
-                children: [
-                  Row(
+    return ScaffoldPage(
+      padding: EdgeInsets.zero,
+      content: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.resources.cardStrokeColorDefault,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text('Select Frames', style: theme.typography.subtitle),
+                const SizedBox(width: 16),
+                Button(
+                  onPressed: _isLoading ? null : _selectAll,
+                  child: const Text('Select All'),
+                ),
+                const SizedBox(width: 8),
+                Button(
+                  onPressed: _isLoading ? null : _selectNone,
+                  child: const Text('Select None'),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: ProgressRing())
+                : _error != null
+                ? Center(child: Text(_error!))
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Button(
-                        onPressed: _selectAll,
-                        child: const Text('Select All'),
+                      Expanded(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: theme.scaffoldBackgroundColor,
+                          ),
+                          child: _imageSize == null
+                              ? const SizedBox.shrink()
+                              : SpritesheetPreview(
+                                  key: _previewKey,
+                                  imagePath: widget.spritesheetPath,
+                                  imageSize: _imageSize!,
+                                  slice: _slice,
+                                  selection: _selection,
+                                  onCellTapped: _toggleCell,
+                                ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Button(
-                        onPressed: _selectNone,
-                        child: const Text('Select None'),
+                      SliceSidebar(
+                        slice: _slice,
+                        onChanged: (slice) => setState(() => _slice = slice),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: theme.scaffoldBackgroundColor,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: theme.resources.cardStrokeColorDefault,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: _imageSize == null
-                                  ? const SizedBox.shrink()
-                                  : SpritesheetPreview(
-                                      key: _previewKey,
-                                      imagePath: widget.spritesheetPath,
-                                      imageSize: _imageSize!,
-                                      slice: _slice,
-                                      selection: _selection,
-                                      onCellTapped: _toggleCell,
-                                    ),
-                            ),
-                          ),
-                        ),
-                        SliceSidebar(
-                          slice: _slice,
-                          onChanged: (slice) => setState(() => _slice = slice),
-                          onAutoSlice: _autoSlice,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-      actions: [
-        Button(
-          onPressed: _isProcessing ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _selection.isEmpty || _isProcessing ? null : _confirm,
-          child: _isProcessing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: ProgressRing(strokeWidth: 2),
-                )
-              : Text(
-                  _selection.isEmpty
-                      ? 'Add Frame(s)'
-                      : 'Add ${_selection.length} Frame(s)',
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: theme.resources.cardStrokeColorDefault,
                 ),
-        ),
-      ],
+              ),
+            ),
+            child: Row(
+              children: [
+                Button(
+                  onPressed: _isProcessing
+                      ? null
+                      : () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _selection.isEmpty || _isProcessing ? null : _confirm,
+                  child: _isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: ProgressRing(strokeWidth: 2),
+                        )
+                      : Text(
+                          _selection.isEmpty
+                              ? 'Add Frame(s)'
+                              : 'Add ${_selection.length} Frame(s)',
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

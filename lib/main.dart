@@ -17,21 +17,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FluentApp(
-      title: "Sprite animator",
-      themeMode: ThemeMode.dark,
-      debugShowCheckedModeBanner: false,
-      color: Colors.blue,
-      darkTheme: FluentThemeData(
-        brightness: Brightness.dark,
+    return ChangeNotifierProvider(
+      create: (context) => ProjectProvider(),
+      child: FluentApp(
+        title: "Sprite animator",
+        themeMode: ThemeMode.dark,
+        debugShowCheckedModeBanner: false,
+        color: Colors.blue,
+        darkTheme: FluentThemeData(
+          brightness: Brightness.dark,
 
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        focusTheme: FocusThemeData(glowFactor: 2.0),
-        fontFamily: 'Inter',
-      ),
-      home: ChangeNotifierProvider(
-        create: (context) => ProjectProvider(),
-        child: const EditorScreen(),
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+          focusTheme: FocusThemeData(glowFactor: 2.0),
+          fontFamily: 'Inter',
+        ),
+        home: const EditorScreen(),
       ),
     );
   }
