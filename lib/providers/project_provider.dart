@@ -34,7 +34,12 @@ class ProjectProvider with ChangeNotifier {
 
   void setSelectedAnimationIndex(int index) {
     selectedAnimationIndex = index;
-    notify([W.editorSidebar, W.editorPreview, W.editorcontrolBar]);
+    notify([
+      W.editorSidebar,
+      W.editorPreview,
+      W.editorcontrolBar,
+      W.editorFramesView,
+    ]);
   }
 
   void toggleLoop() {
@@ -143,8 +148,9 @@ class ProjectProvider with ChangeNotifier {
       await Directory(currentAnimationOutputPath).create();
     }
 
-    final baseName =
-        path.basenameWithoutExtension(path.basename(spritesheetPath));
+    final baseName = path.basenameWithoutExtension(
+      path.basename(spritesheetPath),
+    );
 
     for (final cell in selectionOrder) {
       final outputPath =

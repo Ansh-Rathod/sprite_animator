@@ -94,6 +94,7 @@ class _FramePreview extends StatefulWidget {
 class _FramePreviewState extends State<_FramePreview>
     with SingleTickerProviderStateMixin {
   bool _isLoading = false;
+  int _precacheGeneration = 0;
 
   @override
   void initState() {
@@ -105,6 +106,7 @@ class _FramePreviewState extends State<_FramePreview>
 
   @override
   void dispose() {
+    _precacheGeneration++;
     if (widget.controller.isPlaying) {
       widget.controller.pause();
     }
@@ -145,17 +147,28 @@ class _FramePreviewState extends State<_FramePreview>
 
   Future<void> _precacheFrames() async {
     final paths = widget.data.framePaths;
+    final generation = ++_precacheGeneration;
+
     if (paths.isEmpty) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
 
-    setState(() => _isLoading = true);
-    await SpriteAnimation.precacheAll(
-      paths.map((path) => FileImage(File(path))).toList(),
-      context,
-    );
-    if (mounted) setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = true);
+
+    try {
+      if (!mounted) return;
+      await SpriteAnimation.precacheAll(
+        paths.map((path) => FileImage(File(path))).toList(),
+        context,
+      );
+    } catch (e, stack) {
+      debugPrint('Frame precache failed: $e\n$stack');
+    } finally {
+      if (mounted && generation == _precacheGeneration) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   static bool _listEquals(List<String> a, List<String> b) {
@@ -171,26 +184,36 @@ class _FramePreviewState extends State<_FramePreview>
     final theme = FluentTheme.of(context);
     final framePaths = widget.data.framePaths;
 
-    if (_isLoading) {
-      return const Center(child: ProgressRing());
+    if (framePaths.isEmpty) {
+      return Center(
+        child: Text('Add frames to preview', style: theme.typography.body),
+      );
     }
 
-    return AnimatedBuilder(
-      animation: widget.controller,
-      builder: (context, _) {
-        if (framePaths.isEmpty) {
-          return Center(
-            child: Text('Add frames to preview', style: theme.typography.body),
-          );
-        }
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AnimatedBuilder(
+          animation: widget.controller,
+          builder: (context, _) {
+            final maxIndex = framePaths.length - 1;
+            final index = widget.controller.currentFrame.clamp(0, maxIndex);
 
-        final maxIndex = framePaths.length - 1;
-        final index = widget.controller.currentFrame.clamp(0, maxIndex);
-
-        return Center(
-          child: Image.file(File(framePaths[index]), fit: BoxFit.contain),
-        );
-      },
+            return Center(
+              child: Image.file(File(framePaths[index]), fit: BoxFit.contain),
+            );
+          },
+        ),
+        if (_isLoading)
+          const Positioned(
+            top: 12,
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: ProgressRing(strokeWidth: 2),
+            ),
+          ),
+      ],
     );
   }
 }
