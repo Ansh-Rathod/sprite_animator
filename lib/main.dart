@@ -2,12 +2,14 @@ import 'package:fluent_ui/fluent_ui.dart' hide Colors;
 import 'package:flutter/material.dart';
 import 'package:letstry/cache.dart';
 import 'package:letstry/providers/project_provider.dart';
-import 'package:letstry/screens/editor/editor.dart';
+import 'package:letstry/screens/projects/projects_screen.dart';
+import 'package:letstry/services/hive_service.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Cache.init();
+  await HiveService.init();
 
   runApp(const MyApp());
 }
@@ -31,7 +33,7 @@ class MyApp extends StatelessWidget {
           focusTheme: FocusThemeData(glowFactor: 2.0),
           fontFamily: 'Inter',
         ),
-        home: const EditorScreen(),
+        home: const ProjectsScreen(),
       ),
     );
   }

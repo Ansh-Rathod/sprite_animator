@@ -73,8 +73,7 @@ class ButtonsBar extends StatelessWidget {
                     clearButton: false,
                     value: provider.currentAnimation.fps,
                     onChanged: (v) {
-                      provider.currentAnimation.fps = v ?? 24;
-                      provider.notify([W.editorFramesView, W.editorPreview]);
+                      provider.setFps(v ?? 24);
                     },
                     mode: SpinButtonPlacementMode.inline,
                   ),
@@ -213,15 +212,9 @@ class _FrameSizeButtonState extends State<FrameSizeButton> {
                         text: Text('$s×$s'),
                         onPressed: () {
                           Navigator.of(context).pop();
-                          provider.currentAnimation.frameSize = Size(
-                            s.toDouble(),
-                            s.toDouble(),
+                          provider.setFrameSize(
+                            Size(s.toDouble(), s.toDouble()),
                           );
-                          provider.notify([
-                            W.editorcontrolBar,
-                            W.editorFramesView,
-                            W.editorPreview,
-                          ]);
                         },
                       ),
                   ],

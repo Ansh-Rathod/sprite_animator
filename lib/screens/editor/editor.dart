@@ -91,6 +91,18 @@ class _EditorScreenState extends State<EditorScreen> {
                 ),
                 child: Row(
                   children: [
+                    Tooltip(
+                      message: 'Back to projects',
+                      child: IconButton(
+                        icon: const Icon(WindowsIcons.back),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    10.w,
+                    Text(
+                      state.currentProject?.name ?? 'Untitled',
+                      style: theme.typography.subtitle,
+                    ),
                     const Spacer(),
                     Tooltip(
                       message: 'Export animation',
@@ -302,17 +314,23 @@ class _SidebarItemState extends State<SidebarItem> {
                     controller: cont,
                     autofocus: true,
                     onChanged: (value) {
-                      widget.animation.name = cont.text;
+                      context
+                          .read<ProjectProvider>()
+                          .setAnimationName(widget.animation.id, cont.text);
                     },
                     onSubmitted: (v) {
-                      widget.animation.name = cont.text;
+                      context
+                          .read<ProjectProvider>()
+                          .renameAnimation(widget.animation.id, cont.text);
 
                       setState(() {
                         renameOpen = false;
                       });
                     },
                     onTapOutside: (v) {
-                      widget.animation.name = cont.text;
+                      context
+                          .read<ProjectProvider>()
+                          .renameAnimation(widget.animation.id, cont.text);
                       setState(() {
                         renameOpen = false;
                       });

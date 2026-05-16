@@ -5,21 +5,102 @@ import 'package:flutter_spritesheet_animation/flutter_spritesheet_animation.dart
 import 'package:letstry/cache.dart';
 import 'package:letstry/models/animations.dart';
 import 'package:letstry/models/frame.dart';
+import 'package:letstry/models/project.dart';
 import 'package:letstry/models/spritesheet_slice.dart';
 import 'package:letstry/services/ffmpeg.dart';
+import 'package:letstry/services/hive_service.dart';
 import 'package:letstry/utils/screens.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 
 class ProjectProvider with ChangeNotifier {
-  List<Animations> animations = [];
+  List<Project> projects = [];
   List<String> toNotify = [];
-  int selectedAnimationIndex = 0;
-  Map<String, SpriteAnimationController> spriteControllers = {};
-
   final List<Frame> _clipboard = [];
 
+  Project? _currentProject;
+  Project? get currentProject => _currentProject;
+  Map<String, SpriteAnimationController> spriteControllers = {};
+
+  List<Animations> get animations => _currentProject?.animations ?? [];
+  int get selectedAnimationIndex => _currentProject?.selectedAnimationIndex ?? 0;
+  set selectedAnimationIndex(int value) {
+    if (_currentProject != null) _currentProject!.selectedAnimationIndex = value;
+  }
+  Animations get currentAnimation => animations[selectedAnimationIndex];
+  SpriteAnimationController get currentSpriteController =>
+      spriteControllers[currentAnimation.id]!;
+
   bool get hasClipboard => _clipboard.isNotEmpty;
+
+  // ── Project lifecycle ──
+
+  Future<void> loadProjects() async {
+    projects = await HiveService.loadProjects();
+    notifyListeners();
+  }
+
+  void createProject(String name) {
+    final project = Project(
+      id: Uuid().v4(),
+      name: name,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      animations: [
+        Animations(
+          id: Uuid().v4(),
+          name: 'default',
+          frames: [],
+          fps: 12,
+          loop: true,
+          reverse: false,
+          frameSize: const Size(256, 256),
+        ),
+      ],
+    );
+    projects.add(project);
+    _currentProject = project;
+    spriteControllers.clear();
+    createSpriteController(project.animations[0].id);
+    HiveService.saveProject(project);
+    notifyListeners();
+  }
+
+  void openProject(String id) {
+    final project = projects.firstWhere((p) => p.id == id);
+    _currentProject = project;
+    spriteControllers.clear();
+    for (final anim in project.animations) {
+      createSpriteController(anim.id);
+    }
+    notify([
+      W.editorSidebar,
+      W.editorPreview,
+      W.editorFramesView,
+      W.editorcontrolBar,
+    ]);
+  }
+
+  void deleteProject(String id) {
+    HiveService.deleteProject(id);
+    projects.removeWhere((p) => p.id == id);
+    if (_currentProject?.id == id) {
+      _currentProject = null;
+    }
+    notifyListeners();
+  }
+
+  // ── Auto-save ──
+
+  Future<void> _autoSave() async {
+    if (_currentProject == null) return;
+    _currentProject!.updatedAt = DateTime.now();
+    await HiveService.saveProject(_currentProject!);
+    final idx = projects.indexWhere((p) => p.id == _currentProject!.id);
+    if (idx >= 0) projects[idx] = _currentProject!;
+  }
+
+  // ── Clipboard ──
 
   void copyFrames(List<int> indices) {
     _clipboard.clear();
@@ -47,20 +128,22 @@ class ProjectProvider with ChangeNotifier {
         imagePath: f.imagePath,
       ));
     }
+    _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
-  Animations get currentAnimation => animations[selectedAnimationIndex];
-  SpriteAnimationController get currentSpriteController =>
-      spriteControllers[currentAnimation.id]!;
+  // ── Notifications ──
 
   void notify(List<String> texts) {
     toNotify.addAll(texts);
     notifyListeners();
   }
 
+  // ── Animation selection ──
+
   void setSelectedAnimationIndex(int index) {
     selectedAnimationIndex = index;
+    _autoSave();
     notify([
       W.editorSidebar,
       W.editorPreview,
@@ -69,9 +152,12 @@ class ProjectProvider with ChangeNotifier {
     ]);
   }
 
+  // ── Playback ──
+
   void toggleLoop() {
     currentAnimation.loop = !currentAnimation.loop;
     currentSpriteController.loop = currentAnimation.loop;
+    _autoSave();
     notify([W.editorcontrolBar, W.editorPreview]);
   }
 
@@ -79,17 +165,16 @@ class ProjectProvider with ChangeNotifier {
     final controller = currentSpriteController;
     final alreadyInDirection = currentAnimation.reverse == reverse;
 
-    // If already playing in this direction, pause.
     if (alreadyInDirection && controller.isPlaying) {
       pausePreview();
       return;
     }
 
-    // Set direction and play.
     currentAnimation.reverse = reverse;
     controller.mode = reverse ? PlayMode.reverse : PlayMode.forward;
     rewindSpriteIfFinished(controller);
     controller.play();
+    _autoSave();
     notify([W.editorcontrolBar, W.editorPreview]);
   }
 
@@ -122,6 +207,8 @@ class ProjectProvider with ChangeNotifier {
 
   String? recentlyAdded;
 
+  // ── Animation CRUD ──
+
   void addNewAnimation() {
     final defaultAnimation = Animations(
       id: Uuid().v4(),
@@ -136,7 +223,7 @@ class ProjectProvider with ChangeNotifier {
     setSelectedAnimationIndex(animations.indexOf(defaultAnimation));
     createSpriteController(defaultAnimation.id);
     recentlyAdded = defaultAnimation.id;
-
+    _autoSave();
     notify([W.editorSidebar]);
   }
 
@@ -144,7 +231,7 @@ class ProjectProvider with ChangeNotifier {
     spriteControllers.remove(animation.id);
     animations.remove(animation);
     if (animations.isNotEmpty) setSelectedAnimationIndex(0);
-
+    _autoSave();
     notify([
       W.editorFramesView,
       W.editorPreview,
@@ -153,19 +240,32 @@ class ProjectProvider with ChangeNotifier {
     ]);
   }
 
-  ProjectProvider() {
-    final defaultAnimation = Animations(
-      id: Uuid().v4(),
-      name: 'default',
-      frames: [],
-      fps: 12,
-      loop: true,
-      reverse: false,
-      frameSize: const Size(256, 256),
-    );
-    animations.add(defaultAnimation);
-    createSpriteController(defaultAnimation.id);
+  void renameAnimation(String animationId, String newName) {
+    final anim = animations.firstWhere((a) => a.id == animationId);
+    anim.name = newName;
+    _autoSave();
   }
+
+  void setAnimationName(String animationId, String newName) {
+    final anim = animations.firstWhere((a) => a.id == animationId);
+    anim.name = newName;
+  }
+
+  // ── FPS / Frame size ──
+
+  void setFps(int fps) {
+    currentAnimation.fps = fps;
+    _autoSave();
+    notify([W.editorFramesView, W.editorPreview]);
+  }
+
+  void setFrameSize(Size size) {
+    currentAnimation.frameSize = size;
+    _autoSave();
+    notify([W.editorcontrolBar, W.editorFramesView, W.editorPreview]);
+  }
+
+  // ── Sprite controllers ──
 
   void createSpriteController(String id) {
     final controller = SpriteAnimationController(autoPlay: false);
@@ -174,6 +274,8 @@ class ProjectProvider with ChangeNotifier {
     };
     spriteControllers[id] = controller;
   }
+
+  // ── Frame operations ──
 
   void addNewFrame(String input) async {
     final currentAnimationOutputPath =
@@ -201,6 +303,7 @@ class ProjectProvider with ChangeNotifier {
 
     currentAnimation.frames.add(frame);
 
+    await _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
@@ -227,6 +330,7 @@ class ProjectProvider with ChangeNotifier {
       currentAnimation.frames.add(frame);
     }
 
+    await _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
@@ -270,6 +374,7 @@ class ProjectProvider with ChangeNotifier {
       currentAnimation.frames.add(frame);
     }
 
+    await _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
@@ -296,6 +401,7 @@ class ProjectProvider with ChangeNotifier {
       controller.goToFrame(newIndex);
     }
 
+    _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
@@ -320,6 +426,7 @@ class ProjectProvider with ChangeNotifier {
       controller.goToFrame(currentIdx.clamp(0, frames.length - 1));
     }
 
+    _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 
@@ -348,12 +455,11 @@ class ProjectProvider with ChangeNotifier {
       controller.goToFrame(newCurrentIndex);
     }
 
+    _autoSave();
     notify([W.editorFramesView, W.editorPreview]);
   }
 }
 
-/// When loop is off, the controller stops on the last frame. [play] then
-/// immediately completes again unless we rewind to the start first.
 void rewindSpriteIfFinished(SpriteAnimationController controller) {
   if (controller.loop || controller.totalFrames <= 1) return;
 

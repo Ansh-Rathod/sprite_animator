@@ -42,6 +42,8 @@ dependencies:
   path_provider: ^2.1.5
   uuid: ^4.5.3
   reorderable_grid: ^1.0.0
+  hive_ce: ^2.11.0
+  hive_ce_flutter: ^2.2.0
 
 dev_dependencies:
   flutter_test:
