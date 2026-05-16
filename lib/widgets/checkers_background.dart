@@ -7,9 +7,9 @@ import 'package:fluent_ui/fluent_ui.dart';
 class CheckersBackground extends StatelessWidget {
   const CheckersBackground({
     super.key,
-    this.squareSize = 8.0,
-    this.lightColor = const Color(0xFFFFFFFF),
-    this.darkColor = const Color(0xFFCCCCCC),
+    this.squareSize = 6.0,
+    this.lightColor = const Color.fromARGB(255, 162, 162, 162),
+    this.darkColor = const Color.fromARGB(255, 125, 125, 125),
     this.child,
   });
 

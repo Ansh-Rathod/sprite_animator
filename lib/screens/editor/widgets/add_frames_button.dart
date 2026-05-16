@@ -39,6 +39,13 @@ class _AddFramesButtonState extends State<AddFramesButton> {
                 pickSpritesheet(this.context);
               },
             ),
+            MenuFlyoutItem(
+              text: const Text('Extract frames from video'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                pickVideo(this.context);
+              },
+            ),
           ],
         );
       },

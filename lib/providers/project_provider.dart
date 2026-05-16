@@ -171,6 +171,36 @@ class ProjectProvider with ChangeNotifier {
     notify([W.editorFramesView, W.editorPreview]);
   }
 
+  Future<void> addFramesFromVideo({
+    required String videoPath,
+    required int fps,
+  }) async {
+    final outputDir = "${Cache.tempPath!}/${currentAnimation.id}/video_frames";
+
+    final framePaths = await FFmpegCommands.extractVideoFrames(
+      videoPath,
+      outputDir,
+      fps,
+      defaultFramesSize,
+    );
+
+    final videoName = path.basenameWithoutExtension(
+      path.basename(videoPath),
+    );
+
+    for (var i = 0; i < framePaths.length; i++) {
+      final frame = Frame(
+        id: Uuid().v4(),
+        name: '${videoName}_frame${i + 1}',
+        size: defaultFramesSize,
+        imagePath: framePaths[i],
+      );
+      currentAnimation.frames.add(frame);
+    }
+
+    notify([W.editorFramesView, W.editorPreview]);
+  }
+
   Future<void> addFramesFromSpritesheet({
     required String spritesheetPath,
     required SpritesheetSlice slice,
