@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:ui';
+
 import 'package:letstry/models/frame.dart';
 
 class Animations {
@@ -7,6 +10,7 @@ class Animations {
   int fps;
   bool loop;
   bool reverse;
+  Size frameSize;
 
   Animations({
     required this.id,
@@ -15,6 +19,7 @@ class Animations {
     required this.fps,
     required this.loop,
     required this.reverse,
+    required this.frameSize,
   });
 
   factory Animations.fromJson(Map<String, dynamic> json) {
@@ -25,6 +30,7 @@ class Animations {
       fps: json['fps'],
       loop: json['loop'],
       reverse: json['reverse'],
+      frameSize: Size(json['frameSize']['width'], json['frameSize']['height']),
     );
   }
 
@@ -36,6 +42,7 @@ class Animations {
       'fps': fps,
       'loop': loop,
       'reverse': reverse,
+      'frameSize': {'width': frameSize.width, 'height': frameSize.height},
     };
   }
 }

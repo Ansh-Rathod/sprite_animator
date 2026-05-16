@@ -1,6 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:letstry/providers/project_provider.dart';
-import 'package:letstry/screens/editor/widgets/add_frames_button.dart';
 import 'package:letstry/utils/extentions.dart';
 import 'package:letstry/utils/screens.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +57,13 @@ class ButtonsBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text("FPS:", style: theme.typography.body),
+              8.w,
+              Text(
+                "FPS:",
+                style: theme.typography.body!.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               2.w,
               Transform.scale(
                 scale: 0.85,
@@ -143,7 +148,7 @@ class ButtonsBar extends StatelessWidget {
               Spacer(),
 
               // const SizedBox(width: 16),
-              80.w,
+              110.w,
 
               Tooltip(
                 message: 'Loop',
@@ -155,12 +160,80 @@ class ButtonsBar extends StatelessWidget {
                   onPressed: provider.toggleLoop,
                 ),
               ),
-              2.w,
-              AddFramesButton(),
+              4.w,
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class FrameSizeButton extends StatefulWidget {
+  const FrameSizeButton({super.key});
+
+  @override
+  State<FrameSizeButton> createState() => _FrameSizeButtonState();
+}
+
+class _FrameSizeButtonState extends State<FrameSizeButton> {
+  final FlyoutController _flyoutController = FlyoutController();
+
+  @override
+  void dispose() {
+    _flyoutController.dispose();
+    super.dispose();
+  }
+
+  static const _presets = [64, 128, 256, 512, 1024];
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<ProjectProvider>();
+    final size = provider.currentAnimation.frameSize;
+    final label = '${size.width.toInt()}×${size.height.toInt()}';
+
+    return Transform.scale(
+      scale: 0.85,
+      alignment: Alignment.centerLeft,
+      child: FlyoutTarget(
+        controller: _flyoutController,
+        child: Tooltip(
+          message: 'Frame Size',
+          child: Button(
+            onPressed: () {
+              _flyoutController.showFlyout(
+                barrierDismissible: true,
+                dismissOnPointerMoveAway: false,
+                dismissWithEsc: true,
+                builder: (context) => MenuFlyout(
+                  items: [
+                    for (final s in _presets)
+                      MenuFlyoutItem(
+                        text: Text('$s×$s'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          provider.currentAnimation.frameSize = Size(
+                            s.toDouble(),
+                            s.toDouble(),
+                          );
+                          provider.notify([
+                            W.editorcontrolBar,
+                            W.editorFramesView,
+                            W.editorPreview,
+                          ]);
+                        },
+                      ),
+                  ],
+                ),
+              );
+            },
+            child: Row(
+              children: [Text(label), 4.w, Icon(WindowsIcons.chevron_down)],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

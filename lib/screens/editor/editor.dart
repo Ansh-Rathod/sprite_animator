@@ -1,7 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide FilledButton;
 import 'package:letstry/models/animations.dart';
 import 'package:letstry/providers/project_provider.dart';
 import 'package:letstry/screens/editor/widgets/main_view.dart';
+import 'package:letstry/services/export.dart';
 import 'package:letstry/utils/extentions.dart';
 import 'package:letstry/utils/screens.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +16,55 @@ class EditorScreen extends StatefulWidget {
 }
 
 class _EditorScreenState extends State<EditorScreen> {
+  Future<void> _exportAnimation(
+    BuildContext context,
+    ProjectProvider provider,
+  ) async {
+    final savePath = await FilePicker.saveFile(
+      dialogTitle: 'Save spritesheets as zip',
+      fileName: 'spritesheets.zip',
+      type: FileType.custom,
+      allowedExtensions: ['zip'],
+    );
+    if (savePath == null) return;
+
+    try {
+      final path = savePath.endsWith('.zip') ? savePath : '$savePath.zip';
+      await ExportService.exportToZip(provider.animations, path);
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => ContentDialog(
+          title: const Text('Export Complete'),
+          content: const Text(
+            'All animations exported as Aseprite spritesheets (ZIP).',
+          ),
+          actions: [
+            Button(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => ContentDialog(
+          title: const Text('Export Failed'),
+          content: Text(e.toString()),
+          actions: [
+            Button(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(final BuildContext context) {
     // final appTheme = context.watch<AppTheme>();
@@ -31,11 +82,24 @@ class _EditorScreenState extends State<EditorScreen> {
             children: [
               Container(
                 height: 45,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   color: theme.cardColor,
                   border: Border(
                     bottom: BorderSide(width: 0.4, color: theme.shadowColor),
                   ),
+                ),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    Tooltip(
+                      message: 'Export animation',
+                      child: IconButton(
+                        icon: const Icon(WindowsIcons.export),
+                        onPressed: () => _exportAnimation(context, state),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               Expanded(

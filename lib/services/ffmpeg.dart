@@ -131,6 +131,66 @@ class FFmpegCommands {
     }
   }
 
+  static Future<String> buildSpritesheet(
+    List<String> inputPaths,
+    String outputPath,
+    int columns,
+    int rows,
+  ) async {
+    if (inputPaths.isEmpty) {
+      throw Exception('No frames to build spritesheet');
+    }
+
+    final tempDir = Directory.systemTemp.createTempSync('spritesheet_');
+    try {
+      for (var i = 0; i < inputPaths.length; i++) {
+        final dest = p.join(tempDir.path, 'frame_${i.toString().padLeft(4, '0')}.png');
+        await File(inputPaths[i]).copy(dest);
+      }
+
+      final inputPattern = p.join(tempDir.path, 'frame_%04d.png');
+      final ffmpegBin = _ffmpegExecutable();
+
+      final arguments = [
+        '-y',
+        '-f', 'image2',
+        '-pattern_type', 'sequence',
+        '-start_number', '0',
+        '-i', inputPattern,
+        '-vf', 'tile=${columns}x$rows',
+        '-frames:v', '1',
+        outputPath,
+      ];
+
+      final result = await Process.run(ffmpegBin, arguments);
+
+      if (result.exitCode != 0) {
+        debugPrint('FFmpeg Error: ${result.stderr}');
+        throw Exception('Failed to build spritesheet: ${result.stderr}');
+      }
+
+      debugPrint('Spritesheet built: $outputPath');
+      return outputPath;
+    } on ProcessException catch (e) {
+      debugPrint('Exception while running FFmpeg: $e');
+      if (e.message.contains('Operation not permitted') && Platform.isMacOS) {
+        throw Exception(
+          'Cannot run ffmpeg (macOS blocked the process). '
+          'Use a build with App Sandbox disabled, or add a static ffmpeg binary at '
+          'YourApp.app/Contents/Resources/ffmpeg and enable sandbox again.',
+        );
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('Exception while running FFmpeg: $e');
+      rethrow;
+    } finally {
+      try {
+        await tempDir.delete(recursive: true);
+      } catch (_) {}
+    }
+  }
+
   static Future<String> cropAndResize(
     String inputPath,
     String outputPath,

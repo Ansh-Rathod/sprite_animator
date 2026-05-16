@@ -26,32 +26,42 @@ class _MainViewWidgetState extends State<MainViewWidget> {
   }
 
   Widget _buildResizeHandle(FluentThemeData theme) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeRow,
-      child: GestureDetector(
-        onVerticalDragUpdate: _onDragUpdate,
-        child: Container(
-          // height: 10,
-          width: double.infinity,
-          padding: EdgeInsets.only(bottom: 4, top: 4),
-          decoration: BoxDecoration(
-            color: theme.cardColor,
+    bool isHover = false;
 
-            // border: Border(
-            //   bottom: BorderSide(width: 0.4, color: theme.shadowColor),
-            // ),
-          ),
-          alignment: Alignment.center,
-          child: Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.resources.textFillColorSecondary,
-              borderRadius: BorderRadius.circular(2),
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return MouseRegion(
+          onEnter: (event) => setState(() => isHover = true),
+          onExit: (event) => setState(() => isHover = false),
+          cursor: SystemMouseCursors.resizeRow,
+          child: GestureDetector(
+            onVerticalDragUpdate: _onDragUpdate,
+            child: Container(
+              // height: 10,
+              width: double.infinity,
+              // padding: EdgeInsets.only(bottom: 4, top: 4),
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+
+                border: Border(
+                  top: isHover
+                      ? BorderSide(width: 2, color: theme.accentColor)
+                      : BorderSide(width: 0.4, color: theme.shadowColor),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Container(
+                width: 40,
+                // height: 2,
+                decoration: BoxDecoration(
+                  color: theme.resources.textFillColorSecondary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

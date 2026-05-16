@@ -13,19 +13,46 @@ import 'package:uuid/uuid.dart';
 
 class ProjectProvider with ChangeNotifier {
   List<Animations> animations = [];
-  Size defaultFramesSize = Size(256, 256);
   List<String> toNotify = [];
   int selectedAnimationIndex = 0;
   Map<String, SpriteAnimationController> spriteControllers = {};
 
+  final List<Frame> _clipboard = [];
+
+  bool get hasClipboard => _clipboard.isNotEmpty;
+
+  void copyFrames(List<int> indices) {
+    _clipboard.clear();
+    final frames = currentAnimation.frames;
+    for (final index in indices) {
+      if (index < 0 || index >= frames.length) continue;
+      final f = frames[index];
+      _clipboard.add(Frame(
+        id: Uuid().v4(),
+        name: f.name,
+        size: f.size,
+        imagePath: f.imagePath,
+      ));
+    }
+  }
+
+  void pasteFrames() {
+    if (_clipboard.isEmpty) return;
+    final frames = currentAnimation.frames;
+    for (final f in _clipboard) {
+      frames.add(Frame(
+        id: Uuid().v4(),
+        name: f.name,
+        size: f.size,
+        imagePath: f.imagePath,
+      ));
+    }
+    notify([W.editorFramesView, W.editorPreview]);
+  }
+
   Animations get currentAnimation => animations[selectedAnimationIndex];
   SpriteAnimationController get currentSpriteController =>
       spriteControllers[currentAnimation.id]!;
-
-  void setFramesSize(Size size) {
-    defaultFramesSize = size;
-    notify([W.editorSidebar]);
-  }
 
   void notify(List<String> texts) {
     toNotify.addAll(texts);
@@ -100,9 +127,10 @@ class ProjectProvider with ChangeNotifier {
       id: Uuid().v4(),
       name: "New Animation",
       frames: [],
-      fps: 24,
+      fps: 12,
       loop: true,
       reverse: false,
+      frameSize: const Size(256, 256),
     );
     animations.add(defaultAnimation);
     setSelectedAnimationIndex(animations.indexOf(defaultAnimation));
@@ -130,9 +158,10 @@ class ProjectProvider with ChangeNotifier {
       id: Uuid().v4(),
       name: 'default',
       frames: [],
-      fps: 24,
+      fps: 12,
       loop: true,
       reverse: false,
+      frameSize: const Size(256, 256),
     );
     animations.add(defaultAnimation);
     createSpriteController(defaultAnimation.id);
@@ -157,12 +186,16 @@ class ProjectProvider with ChangeNotifier {
     final outputPath =
         "$currentAnimationOutputPath/${path.basenameWithoutExtension(path.basename(input))}.png";
 
-    await FFmpegCommands.resizeImage(input, outputPath, defaultFramesSize);
+    await FFmpegCommands.resizeImage(
+      input,
+      outputPath,
+      currentAnimation.frameSize,
+    );
 
     final frame = Frame(
       id: Uuid().v4(),
       name: path.basename(input),
-      size: defaultFramesSize,
+      size: currentAnimation.frameSize,
       imagePath: outputPath,
     );
 
@@ -181,18 +214,14 @@ class ProjectProvider with ChangeNotifier {
       videoPath,
       outputDir,
       fps,
-      defaultFramesSize,
-    );
-
-    final videoName = path.basenameWithoutExtension(
-      path.basename(videoPath),
+      currentAnimation.frameSize,
     );
 
     for (var i = 0; i < framePaths.length; i++) {
       final frame = Frame(
         id: Uuid().v4(),
-        name: '${videoName}_frame${i + 1}',
-        size: defaultFramesSize,
+        name: '${i + 1}',
+        size: currentAnimation.frameSize,
         imagePath: framePaths[i],
       );
       currentAnimation.frames.add(frame);
@@ -217,7 +246,8 @@ class ProjectProvider with ChangeNotifier {
       path.basename(spritesheetPath),
     );
 
-    for (final cell in selectionOrder) {
+    for (var i = 0; i < selectionOrder.length; i++) {
+      final cell = selectionOrder[i];
       final outputPath =
           "$currentAnimationOutputPath/${baseName}_r${cell.row}c${cell.col}.png";
 
@@ -227,13 +257,13 @@ class ProjectProvider with ChangeNotifier {
         spritesheetPath,
         outputPath,
         cropRect,
-        defaultFramesSize,
+        currentAnimation.frameSize,
       );
 
       final frame = Frame(
         id: Uuid().v4(),
-        name: '$baseName [${cell.row},${cell.col}]',
-        size: defaultFramesSize,
+        name: '${i + 1}',
+        size: currentAnimation.frameSize,
         imagePath: outputPath,
       );
 
@@ -264,6 +294,30 @@ class ProjectProvider with ChangeNotifier {
           ? currentIdx - 1
           : currentIdx;
       controller.goToFrame(newIndex);
+    }
+
+    notify([W.editorFramesView, W.editorPreview]);
+  }
+
+  void removeFrames(List<int> indices) {
+    if (indices.isEmpty) return;
+
+    final frames = currentAnimation.frames;
+    final controller = currentSpriteController;
+    int currentIdx = controller.currentFrame.clamp(0, frames.length - 1);
+
+    final sorted = List.of(indices)..sort((a, b) => b.compareTo(a));
+
+    for (final index in sorted) {
+      if (index < 0 || index >= frames.length) continue;
+      frames.removeAt(index);
+      if (index < currentIdx) currentIdx--;
+    }
+
+    if (frames.isEmpty) {
+      controller.stop();
+    } else {
+      controller.goToFrame(currentIdx.clamp(0, frames.length - 1));
     }
 
     notify([W.editorFramesView, W.editorPreview]);
