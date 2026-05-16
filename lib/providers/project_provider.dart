@@ -93,6 +93,8 @@ class ProjectProvider with ChangeNotifier {
     notify([W.editorcontrolBar, W.editorPreview, W.editorFramesView]);
   }
 
+  String? recentlyAdded;
+
   void addNewAnimation() {
     final defaultAnimation = Animations(
       id: Uuid().v4(),
@@ -103,9 +105,24 @@ class ProjectProvider with ChangeNotifier {
       reverse: false,
     );
     animations.add(defaultAnimation);
+    setSelectedAnimationIndex(animations.indexOf(defaultAnimation));
     createSpriteController(defaultAnimation.id);
+    recentlyAdded = defaultAnimation.id;
 
     notify([W.editorSidebar]);
+  }
+
+  void deleteAnimation(Animations animation) {
+    spriteControllers.remove(animation.id);
+    animations.remove(animation);
+    if (animations.isNotEmpty) setSelectedAnimationIndex(0);
+
+    notify([
+      W.editorFramesView,
+      W.editorPreview,
+      W.editorSidebar,
+      W.editorcontrolBar,
+    ]);
   }
 
   ProjectProvider() {

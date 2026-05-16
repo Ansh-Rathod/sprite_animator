@@ -15,7 +15,6 @@ class _MainViewWidgetState extends State<MainViewWidget> {
 
   static const double _minHeight = 120.0;
   static const double _maxHeight = 400.0;
-  static const double _handleHeight = 16.0;
 
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {

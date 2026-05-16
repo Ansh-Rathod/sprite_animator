@@ -96,6 +96,9 @@ class _EditorScreenState extends State<EditorScreen> {
                                 onTap: () {
                                   state.setSelectedAnimationIndex(index);
                                 },
+                                rename:
+                                    state.recentlyAdded ==
+                                    state.animations[index].id,
                               );
                             },
                           ),
@@ -118,11 +121,13 @@ class SidebarItem extends StatefulWidget {
   final Animations animation;
   final bool isSelected;
   final void Function() onTap;
+  final bool rename;
   const SidebarItem({
     super.key,
     required this.animation,
     required this.isSelected,
     required this.onTap,
+    this.rename = false,
   });
 
   @override
@@ -131,11 +136,79 @@ class SidebarItem extends StatefulWidget {
 
 class _SidebarItemState extends State<SidebarItem> {
   bool isHovered = false;
+  bool renameOpen = false;
+  TextEditingController cont = TextEditingController();
+
+  @override
+  void initState() {
+    cont.text = widget.animation.name;
+    renameOpen = widget.rename;
+    if (renameOpen) {
+      context.read<ProjectProvider>().recentlyAdded = null;
+      cont.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: cont.text.length,
+      );
+    }
+    super.initState();
+  }
+
+  final FlyoutController _flyoutController = FlyoutController();
+
+  @override
+  void dispose() {
+    _flyoutController.dispose();
+    super.dispose();
+  }
+
+  void makeRenameOpen() {
+    setState(() {
+      renameOpen = true;
+      cont.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: cont.text.length,
+      );
+    });
+  }
+
+  void _showMenu() {
+    _flyoutController.showFlyout(
+      barrierDismissible: true,
+      dismissOnPointerMoveAway: false,
+      dismissWithEsc: true,
+      builder: (context) {
+        return MenuFlyout(
+          items: [
+            MenuFlyoutItem(
+              text: const Text('Rename'),
+              onPressed: () {
+                makeRenameOpen();
+                Navigator.of(context).pop();
+              },
+            ),
+            MenuFlyoutItem(
+              text: const Text('Delete'),
+              onPressed: () {
+                context.read<ProjectProvider>().deleteAnimation(
+                  widget.animation,
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
     return GestureDetector(
       onTap: widget.onTap,
+      onDoubleTap: () {
+        makeRenameOpen();
+      },
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (event) {
@@ -146,7 +219,9 @@ class _SidebarItemState extends State<SidebarItem> {
         },
         child: Container(
           margin: EdgeInsets.only(bottom: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: renameOpen
+              ? EdgeInsets.zero
+              : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             color: widget.isSelected
@@ -157,14 +232,40 @@ class _SidebarItemState extends State<SidebarItem> {
           ),
           child: Row(
             children: [
-              4.w,
-              Text(widget.animation.name),
-              Spacer(),
+              if (renameOpen)
+                Expanded(
+                  child: TextBox(
+                    controller: cont,
+                    autofocus: true,
+                    onChanged: (value) {
+                      widget.animation.name = cont.text;
+                    },
+                    onSubmitted: (v) {
+                      widget.animation.name = cont.text;
+
+                      setState(() {
+                        renameOpen = false;
+                      });
+                    },
+                    onTapOutside: (v) {
+                      widget.animation.name = cont.text;
+                      setState(() {
+                        renameOpen = false;
+                      });
+                    },
+                  ),
+                )
+              else
+                Expanded(child: Text(widget.animation.name)),
+
               Tooltip(
                 message: "more options",
-                child: IconButton(
-                  icon: Icon(WindowsIcons.more, size: 12),
-                  onPressed: () {},
+                child: FlyoutTarget(
+                  controller: _flyoutController,
+                  child: IconButton(
+                    icon: Icon(WindowsIcons.more, size: 12),
+                    onPressed: _showMenu,
+                  ),
                 ),
               ),
             ],

@@ -47,7 +47,7 @@ class _AddFramesButtonState extends State<AddFramesButton> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FluentTheme.of(context);
+    // final theme = FluentTheme.of(context);
 
     return Tooltip(
       message: "Add frames",

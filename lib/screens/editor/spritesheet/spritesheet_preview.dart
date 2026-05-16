@@ -195,60 +195,60 @@ class SpritesheetPreviewState extends State<SpritesheetPreview> {
   }
 }
 
-class _ZoomToolbar extends StatelessWidget {
-  final double scale;
-  final VoidCallback onZoomIn;
-  final VoidCallback onZoomOut;
-  final VoidCallback onFit;
+// class _ZoomToolbar extends StatelessWidget {
+//   final double scale;
+//   final VoidCallback onZoomIn;
+//   final VoidCallback onZoomOut;
+//   final VoidCallback onFit;
 
-  const _ZoomToolbar({
-    required this.scale,
-    required this.onZoomIn,
-    required this.onZoomOut,
-    required this.onFit,
-  });
+//   const _ZoomToolbar({
+//     required this.scale,
+//     required this.onZoomIn,
+//     required this.onZoomOut,
+//     required this.onFit,
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = FluentTheme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: theme.resources.cardStrokeColorDefault),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(FluentIcons.remove, size: 14),
-            onPressed: onZoomOut,
-          ),
-          SizedBox(
-            width: 52,
-            child: Text(
-              '${(scale * 100).toStringAsFixed(1)}%',
-              textAlign: TextAlign.center,
-              style: theme.typography.caption,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(FluentIcons.add, size: 14),
-            onPressed: onZoomIn,
-          ),
-          Tooltip(
-            message: 'Fit to view',
-            child: IconButton(
-              icon: const Icon(FluentIcons.fit_page, size: 14),
-              onPressed: onFit,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = FluentTheme.of(context);
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+//       decoration: BoxDecoration(
+//         color: theme.cardColor.withValues(alpha: 0.9),
+//         borderRadius: BorderRadius.circular(6),
+//         border: Border.all(color: theme.resources.cardStrokeColorDefault),
+//       ),
+//       child: Row(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           IconButton(
+//             icon: const Icon(FluentIcons.remove, size: 14),
+//             onPressed: onZoomOut,
+//           ),
+//           SizedBox(
+//             width: 52,
+//             child: Text(
+//               '${(scale * 100).toStringAsFixed(1)}%',
+//               textAlign: TextAlign.center,
+//               style: theme.typography.caption,
+//             ),
+//           ),
+//           IconButton(
+//             icon: const Icon(FluentIcons.add, size: 14),
+//             onPressed: onZoomIn,
+//           ),
+//           Tooltip(
+//             message: 'Fit to view',
+//             child: IconButton(
+//               icon: const Icon(FluentIcons.fit_page, size: 14),
+//               onPressed: onFit,
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class _GridPainter extends CustomPainter {
   final SpritesheetSlice slice;
