@@ -49,33 +49,16 @@ class _AddFramesButtonState extends State<AddFramesButton> {
   Widget build(BuildContext context) {
     final theme = FluentTheme.of(context);
 
-    return Column(
-      children: [
-        FlyoutTarget(
-          controller: _flyoutController,
-          child: GestureDetector(
-            onTap: _showMenu,
-            child: Container(
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              width: 100,
-              height: 100,
-              child: const Icon(WindowsIcons.add),
-            ),
-          ),
+    return Tooltip(
+      message: "Add frames",
+      child: FlyoutTarget(
+        controller: _flyoutController,
+        child: IconButton(
+          onPressed: _showMenu,
+
+          icon: const Icon(WindowsIcons.add),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Add frames',
-          overflow: TextOverflow.ellipsis,
-          style: theme.typography.body!.copyWith(
-            fontSize: 12,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

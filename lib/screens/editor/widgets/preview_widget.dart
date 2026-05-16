@@ -4,6 +4,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_spritesheet_animation/flutter_spritesheet_animation.dart';
 import 'package:letstry/providers/project_provider.dart';
 import 'package:letstry/utils/screens.dart';
+import 'package:letstry/widgets/checkers_background.dart';
 import 'package:provider/provider.dart';
 
 class PreviewData {
@@ -32,13 +33,8 @@ class PreviewData {
   }
 
   @override
-  int get hashCode => Object.hash(
-    animationId,
-    fps,
-    loop,
-    reverse,
-    Object.hashAll(framePaths),
-  );
+  int get hashCode =>
+      Object.hash(animationId, fps, loop, reverse, Object.hashAll(framePaths));
 
   static bool _listEquals(List<String> a, List<String> b) {
     if (a.length != b.length) return false;
@@ -60,7 +56,6 @@ class PreviewWidget extends StatelessWidget {
           shouldRebuildVideo(W.editorPreview, context),
       builder: (context, provider, _) {
         return _FramePreview(
-          key: ValueKey(provider.currentAnimation.id),
           data: PreviewData(
             animationId: provider.currentAnimation.id,
             framePaths: provider.currentAnimation.frames
@@ -78,11 +73,7 @@ class PreviewWidget extends StatelessWidget {
 }
 
 class _FramePreview extends StatefulWidget {
-  const _FramePreview({
-    super.key,
-    required this.data,
-    required this.controller,
-  });
+  const _FramePreview({required this.data, required this.controller});
 
   final PreviewData data;
   final SpriteAnimationController controller;
@@ -92,7 +83,7 @@ class _FramePreview extends StatefulWidget {
 }
 
 class _FramePreviewState extends State<_FramePreview>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isLoading = false;
   int _precacheGeneration = 0;
 
@@ -100,8 +91,11 @@ class _FramePreviewState extends State<_FramePreview>
   void initState() {
     super.initState();
     widget.controller.attach(this);
-    _syncController();
-    _precacheFrames();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncController();
+      _precacheFrames();
+    });
   }
 
   @override
@@ -120,10 +114,13 @@ class _FramePreviewState extends State<_FramePreview>
       widget.controller.attach(this);
     }
     if (oldWidget.data != widget.data) {
-      _syncController();
-      if (!_listEquals(oldWidget.data.framePaths, widget.data.framePaths)) {
-        _precacheFrames();
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _syncController();
+        if (!_listEquals(oldWidget.data.framePaths, widget.data.framePaths)) {
+          _precacheFrames();
+        }
+      });
     }
   }
 
@@ -200,7 +197,9 @@ class _FramePreviewState extends State<_FramePreview>
             final index = widget.controller.currentFrame.clamp(0, maxIndex);
 
             return Center(
-              child: Image.file(File(framePaths[index]), fit: BoxFit.contain),
+              child: CheckersBackground(
+                child: Image.file(File(framePaths[index]), fit: BoxFit.contain),
+              ),
             );
           },
         ),

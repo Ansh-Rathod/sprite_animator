@@ -93,22 +93,23 @@ class SpritesheetPreviewState extends State<SpritesheetPreview> {
       builder: (context, constraints) {
         return Stack(
           children: [
-            Positioned(
-              left: 12,
-              top: 12,
-              child: _ZoomToolbar(
-                scale: _scale,
-                onZoomIn: zoomIn,
-                onZoomOut: zoomOut,
-                onFit: () => fitToView(constraints.biggest),
-              ),
-            ),
+            // Positioned(
+            //   left: 12,
+            //   top: 12,
+            //   child: _ZoomToolbar(
+            //     scale: _scale,
+            //     onZoomIn: zoomIn,
+            //     onZoomOut: zoomOut,
+            //     onFit: () => fitToView(constraints.biggest),
+            //   ),
+            // ),
             InteractiveViewer(
               transformationController: _transformController,
               minScale: 0.05,
               maxScale: 10,
               constrained: false,
-              boundaryMargin: const EdgeInsets.all(200),
+              alignment: Alignment.center,
+              boundaryMargin: const EdgeInsets.all(500),
               child: GestureDetector(
                 onTapDown: (details) =>
                     _handleTapDown(details, Size(displayW, displayH)),
@@ -268,14 +269,18 @@ class _GridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     for (var col = 0; col <= slice.columns; col++) {
-      final x = (slice.offset.dx + col * slice.cellSize.width +
+      final x =
+          (slice.offset.dx +
+              col * slice.cellSize.width +
               col * slice.separation.width) *
           scale;
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
 
     for (var row = 0; row <= slice.rows; row++) {
-      final y = (slice.offset.dy + row * slice.cellSize.height +
+      final y =
+          (slice.offset.dy +
+              row * slice.cellSize.height +
               row * slice.separation.height) *
           scale;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);

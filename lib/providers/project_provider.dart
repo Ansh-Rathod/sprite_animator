@@ -48,6 +48,24 @@ class ProjectProvider with ChangeNotifier {
     notify([W.editorcontrolBar, W.editorPreview]);
   }
 
+  void setPlayDirection(bool reverse) {
+    final controller = currentSpriteController;
+    final alreadyInDirection = currentAnimation.reverse == reverse;
+
+    // If already playing in this direction, pause.
+    if (alreadyInDirection && controller.isPlaying) {
+      pausePreview();
+      return;
+    }
+
+    // Set direction and play.
+    currentAnimation.reverse = reverse;
+    controller.mode = reverse ? PlayMode.reverse : PlayMode.forward;
+    rewindSpriteIfFinished(controller);
+    controller.play();
+    notify([W.editorcontrolBar, W.editorPreview]);
+  }
+
   void playPreview() {
     final controller = currentSpriteController;
     rewindSpriteIfFinished(controller);

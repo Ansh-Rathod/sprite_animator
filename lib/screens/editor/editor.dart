@@ -23,57 +23,91 @@ class _EditorScreenState extends State<EditorScreen> {
       shouldRebuild: (previous, next) {
         return shouldRebuildVideo(W.editorSidebar, context);
       },
+      child: const Expanded(child: MainViewWidget()),
       builder: (context, state, child) {
-        return Row(
-          children: [
-            Container(
-              color: theme.micaBackgroundColor,
-              width: 250,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  10.h,
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    child: Row(
-                      children: [
-                        Text("Animations", style: theme.typography.subtitle),
-                        Spacer(),
-                        Tooltip(
-                          message: "Add New Animation",
-                          child: IconButton(
-                            icon: WindowsIcon(WindowsIcons.add),
-                            onPressed: () {
-                              state.addNewAnimation();
-                            },
+        return Container(
+          decoration: BoxDecoration(color: theme.micaBackgroundColor),
+          child: Column(
+            children: [
+              Container(
+                height: 45,
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  border: Border(
+                    bottom: BorderSide(width: 0.4, color: theme.shadowColor),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: theme.cardColor,
+                        border: Border(
+                          right: BorderSide(
+                            width: 0.3,
+                            color: theme.shadowColor,
                           ),
                         ),
-                      ],
+                      ),
+
+                      width: 250,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          10.h,
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  "Animations",
+                                  style: theme.typography.subtitle!.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Spacer(),
+                                Tooltip(
+                                  message: "Add New Animation",
+                                  child: IconButton(
+                                    icon: WindowsIcon(WindowsIcons.add),
+                                    onPressed: () {
+                                      state.addNewAnimation();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: state.animations.length,
+                            padding: const EdgeInsets.all(8),
+                            itemBuilder: (context, index) {
+                              return SidebarItem(
+                                animation: state.animations[index],
+                                isSelected:
+                                    index == state.selectedAnimationIndex,
+                                onTap: () {
+                                  state.setSelectedAnimationIndex(index);
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: state.animations.length,
-                    padding: const EdgeInsets.all(8),
-                    itemBuilder: (context, index) {
-                      return SidebarItem(
-                        animation: state.animations[index],
-                        isSelected: index == state.selectedAnimationIndex,
-                        onTap: () {
-                          state.setSelectedAnimationIndex(index);
-                        },
-                      );
-                    },
-                  ),
-                ],
+                    child!,
+                  ],
+                ),
               ),
-            ),
-            Expanded(child: MainViewWidget()),
-          ],
+            ],
+          ),
         );
       },
     );
